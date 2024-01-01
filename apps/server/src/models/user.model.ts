@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose'
+import mongoose, { Schema, Document } from 'mongoose'
 
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
@@ -90,5 +90,21 @@ userSchema.methods.generateRefreshToken = function () {
     }
   )
 }
+interface IUser {
+  fullName: string
+  email: string
+  password: string
+  role: string
+  avatar: string
+  isSeller: boolean
+  isVerified: boolean
+  refreshToken: string
+}
 
-export const User = mongoose.model('User', userSchema)
+interface IUserDocument extends IUser, Document {
+  isPasswordCorrect(password: string): Promise<boolean>
+  generateAccessToken(): string
+  generateRefreshToken(): string
+}
+
+export const User = mongoose.model<IUserDocument>('User', userSchema)
