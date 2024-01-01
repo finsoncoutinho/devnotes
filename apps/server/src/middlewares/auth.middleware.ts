@@ -27,17 +27,17 @@ export const verifyJWT = asyncHandler(async (req: AuthRequest, _, next) => {
       throw new ApiError(401, 'Unauthorized request')
     }
 
-    interface IDecodedToken {
+    interface IDecodedAccessToken {
       _id: string
       email: string
       username: string
       fullName: string
     }
 
-    const decodedToken: IDecodedToken = jwt.verify(
+    const decodedToken: IDecodedAccessToken = jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET!
-    ) as IDecodedToken
+    ) as IDecodedAccessToken
 
     const user = await User.findById(decodedToken?._id).select(
       '-password -refreshToken'
