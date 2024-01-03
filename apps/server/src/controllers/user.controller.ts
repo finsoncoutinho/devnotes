@@ -1,9 +1,10 @@
+import jwt from 'jsonwebtoken'
+import { z } from 'zod'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { User } from '../models/user.model'
 import { ApiError } from '../utils/ApiError'
 import { ApiResponse } from '../utils/ApiResponse'
 import { asyncHandler } from '../utils/asyncHandler'
-import jwt from 'jsonwebtoken'
 import { uploadOnCloudinary } from '../utils/cloudinary'
 
 const generateAccessAndRefreshTokens = async (userId: string) => {
@@ -31,35 +32,58 @@ const registerUser = asyncHandler(async (req, res) => {
   // check user creation
   // remove password and refresh token feild from response
   // return response
-
-  const { fullName, email, password } = req.body
-
-  const userExists = await User.findOne({ email })
-
-  if (userExists) {
-    throw new ApiError(409, 'User with this email already exists')
-  }
-
-  const user = await User.create({
-    fullName,
-    email,
-    password,
-    role: 'user',
-    isVerified: false,
-    isSeller: false,
+  const userSchema = z.object({
+    fullName: z.string().min(1, { message: 'Full name must not be empty' }),
+    email: z.string().email({ message: 'Invalid email format' }),
+    password: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters long' }),
   })
 
-  const createdUser = await User.findById(user._id).select(
-    '-password -refreshToken'
-  )
+  type UserType = z.infer<typeof userSchema>
 
-  if (!createdUser) {
-    throw new ApiError(500, 'Something went wrong while registering the user')
+  try {
+    const { fullName, email, password }: UserType = userSchema.parse(req.body)
+
+    const userExists = await User.findOne({ email })
+
+    if (userExists) {
+      throw new ApiError(409, 'User with this email already exists')
+    }
+
+    const user = await User.create({
+      fullName,
+      email,
+      password,
+      role: 'user',
+      isVerified: false,
+      isSeller: false,
+    })
+
+    const createdUser = await User.findById(user._id).select(
+      '-password -refreshToken'
+    )
+
+    if (!createdUser) {
+      throw new ApiError(500, 'Something went wrong while registering the user')
+    }
+
+    return res
+      .status(201)
+      .json(new ApiResponse(200, createdUser, 'User registered successfully'))
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // const fieldErrors: Record<string, string> = {}
+      // error.errors.forEach((err) => {
+      //   const fieldName = err.path[0]
+      //   const errorMessage = err.message || 'Validation error'
+      //   fieldErrors[fieldName] = errorMessage
+      // })
+
+      // throw new ApiError(400, 'Validation error')
+      throw new ApiError(400, error.errors[0].message)
+    }
   }
-
-  return res
-    .status(201)
-    .json(new ApiResponse(200, createdUser, 'User registered successfully'))
 })
 
 const loginUser = asyncHandler(async (req, res) => {
