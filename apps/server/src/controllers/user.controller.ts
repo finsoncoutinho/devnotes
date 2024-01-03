@@ -93,49 +93,64 @@ const loginUser = asyncHandler(async (req, res) => {
   // generate access and refresh token
   // send cookie
 
-  const { email, password } = req.body
+  const userSchema = z.object({
+    email: z.string().email({ message: 'Invalid email format' }),
+    password: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters long' }),
+  })
 
-  const user = await User.findOne({ email })
+  type UserType = z.infer<typeof userSchema>
 
-  if (!user) {
-    throw new ApiError(404, 'User does not exists')
-  }
+  try {
+    const { email, password }: UserType = userSchema.parse(req.body)
 
-  // methods defined on the userSchema should be used on user instance and not the User model
-  const isPasswordValid = await user.isPasswordCorrect(password)
+    const user = await User.findOne({ email })
 
-  if (!isPasswordValid) {
-    throw new ApiError(401, 'Invalid user credentials')
-  }
+    if (!user) {
+      throw new ApiError(404, 'User does not exists')
+    }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    user._id
-  )
+    // methods defined on the userSchema should be used on user instance and not the User model
+    const isPasswordValid = await user.isPasswordCorrect(password)
 
-  const loggedInUser = await User.findById(user._id).select(
-    '-password -refreshToken'
-  )
+    if (!isPasswordValid) {
+      throw new ApiError(401, 'Invalid user credentials')
+    }
 
-  const options = {
-    httpOnly: true,
-    secure: true,
-  }
-
-  return res
-    .status(200)
-    .cookie('accessToken', accessToken, options)
-    .cookie('refreshToken', refreshToken, options)
-    .json(
-      new ApiResponse(
-        200,
-        {
-          user: loggedInUser,
-          accessToken,
-          refreshToken,
-        },
-        'User logged In Successfully'
-      )
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user._id
     )
+
+    const loggedInUser = await User.findById(user._id).select(
+      '-password -refreshToken'
+    )
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    }
+
+    return res
+      .status(200)
+      .cookie('accessToken', accessToken, options)
+      .cookie('refreshToken', refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            user: loggedInUser,
+            accessToken,
+            refreshToken,
+          },
+          'User logged In Successfully'
+        )
+      )
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ApiError(400, error.errors[0].message)
+    }
+  }
 })
 
 const logoutUser = asyncHandler(async (req: AuthRequest, res) => {
