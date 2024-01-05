@@ -16,11 +16,7 @@ const notesSchema = new Schema(
       type: String,
       required: true,
     },
-    tags: [
-      {
-        type: String,
-      },
-    ],
+
     price: {
       type: Number,
       required: true,
@@ -38,7 +34,7 @@ const notesSchema = new Schema(
       required: true,
     },
 
-    userId: {
+    sellerID: {
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
