@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose'
 
 const cartSchema = new Schema(
   {
-    userId: {
+    userID: {
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
