@@ -13,8 +13,8 @@ const notesSchema = new Schema(
       required: true,
     },
     category: {
-      type: String,
-      required: true,
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
     },
 
     price: {
@@ -25,7 +25,7 @@ const notesSchema = new Schema(
       type: String,
       required: true,
     },
-    NotesURL: {
+    notesURL: {
       type: String,
       required: true,
     },
