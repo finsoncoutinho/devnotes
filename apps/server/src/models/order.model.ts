@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose'
 
 const orderSchema = new Schema(
   {
-    userId: {
+    userID: {
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
