@@ -2,12 +2,12 @@ import mongoose, { Schema } from 'mongoose'
 
 const reviewSchema = new Schema(
   {
-    userId: {
+    userID: {
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
 
-    notesId: {
+    notesID: {
       type: Schema.Types.ObjectId,
       ref: 'Note',
     },
