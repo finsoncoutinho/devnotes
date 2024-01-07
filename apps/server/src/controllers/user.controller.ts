@@ -1,11 +1,12 @@
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
+import nodemailer from 'nodemailer'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { User } from '../models/user.model'
 import { ApiError } from '../utils/ApiError'
 import { ApiResponse } from '../utils/ApiResponse'
 import { asyncHandler } from '../utils/asyncHandler'
-import { uploadOnCloudinary } from '../utils/cloudinary'
+import { deleteFileOnCloudinary, uploadOnCloudinary } from '../utils/cloudinary'
 
 const generateAccessAndRefreshTokens = async (userId: string) => {
   try {
@@ -55,6 +56,7 @@ const registerUser = asyncHandler(async (req, res) => {
       fullName,
       email,
       password,
+      avatar: '',
       role: 'user',
       isVerified: false,
       isSeller: false,
@@ -83,6 +85,7 @@ const registerUser = asyncHandler(async (req, res) => {
       // throw new ApiError(400, 'Validation error')
       throw new ApiError(400, error.errors[0].message)
     }
+    throw error
   }
 })
 
@@ -150,6 +153,7 @@ const loginUser = asyncHandler(async (req, res) => {
     if (error instanceof z.ZodError) {
       throw new ApiError(400, error.errors[0].message)
     }
+    throw error
   }
 })
 
@@ -232,21 +236,42 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 })
 
 const changeCurrentPassword = asyncHandler(async (req: AuthRequest, res) => {
-  const { oldPassword, newPassword } = req.body
+  const passwordSchema = z.object({
+    oldPassword: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters long' }),
 
-  const user = await User.findById(req.user?._id)
-  const isPasswordCorrect = await user?.isPasswordCorrect(oldPassword)
+    newPassword: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters long' }),
+  })
 
-  if (!isPasswordCorrect) {
-    throw new ApiError(400, 'Invalid old password')
+  type passwordType = z.infer<typeof passwordSchema>
+
+  try {
+    const { oldPassword, newPassword }: passwordType = passwordSchema.parse(
+      req.body
+    )
+
+    const user = await User.findById(req.user?._id)
+    const isPasswordCorrect = await user?.isPasswordCorrect(oldPassword)
+
+    if (!isPasswordCorrect) {
+      throw new ApiError(400, 'Invalid old password')
+    }
+
+    user!.password = newPassword
+    await user!.save({ validateBeforeSave: false })
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, 'Password changed successfully'))
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ApiError(400, error.errors[0].message)
+    }
+    throw error
   }
-
-  user!.password = newPassword
-  await user!.save({ validateBeforeSave: false })
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, 'Password changed successfully'))
 })
 
 const getCurrentUser = asyncHandler(async (req: AuthRequest, res) => {
@@ -256,55 +281,176 @@ const getCurrentUser = asyncHandler(async (req: AuthRequest, res) => {
 })
 
 const updateUserDetails = asyncHandler(async (req: AuthRequest, res) => {
-  const { fullName } = req.body
+  const userSchema = z.object({
+    fullName: z.string().min(1, { message: 'Full name must not be empty' }),
+  })
 
-  if (!fullName) {
-    throw new ApiError(400, 'All fields are required')
+  type UserType = z.infer<typeof userSchema>
+
+  try {
+    const avatarLocalPath = req.file?.path
+
+    const { fullName }: UserType = userSchema.parse(req.body)
+    let user
+
+    if (!avatarLocalPath) {
+      user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+          $set: {
+            fullName,
+          },
+        },
+        { new: true }
+      ).select('-password -refreshToken')
+    } else {
+      if (req.user?.avatar !== '') {
+        // delete old avatar
+
+        const deleteAvatar = await deleteFileOnCloudinary(req.user?.email!)
+        if (!deleteAvatar) {
+          throw new ApiError(500, 'Error while deleteing old avatar')
+        }
+      }
+
+      const avatar = await uploadOnCloudinary(avatarLocalPath, req.user?.email!)
+
+      if (!avatar?.url) {
+        throw new ApiError(400, 'Error while uploading the avatar')
+      }
+
+      user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+          $set: {
+            fullName,
+            avatar: avatar?.url,
+          },
+        },
+        { new: true }
+      ).select('-password -refreshToken')
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, 'Account details updated successfully'))
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ApiError(400, error.errors[0].message)
+    }
+
+    throw error
+  }
+})
+
+const becomeSeller = asyncHandler(async (req: AuthRequest, res) => {
+  if (!req.user?.isVerified) {
+    throw new ApiError(
+      403,
+      'Your email is not verified. Please verify your email before becoming a seller to unlock this feature.'
+    )
   }
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
-        fullName,
+        isSeller: true,
       },
     },
     { new: true }
   ).select('-password -refreshToken')
-
   return res
     .status(200)
     .json(new ApiResponse(200, user, 'Account details updated successfully'))
 })
 
-const updateUserAvatar = asyncHandler(async (req: AuthRequest, res) => {
-  const avatarLocalPath = req.file?.path
+const sendVerificationEmail = asyncHandler(async (req: AuthRequest, res) => {
+  const verificationLink = `http:localhost:3000/verify-email/${req.user?._id}`
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, 'Avatar file is missing')
+  console.log('email-->' + req.user?.email)
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMPT_SERVER_HOST,
+    port: Number(process.env.SMPT_SERVER_PORT),
+    auth: {
+      user: process.env.SMPT_SERVER_USER,
+      pass: process.env.SMPT_SERVER_PASSWORD,
+    },
+  })
+
+  // Email content
+  const mailOptions = {
+    from: 'devnotes.fin@gmail.com',
+    to: req.user?.email,
+    subject: 'Verify your DevNotes Account',
+    html: `
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification</title>
+</head>
+<body style="font-family: 'Arial', sans-serif;">
+
+  <h2>Email Verification</h2>
+
+  <p>Dear ${req.user?.fullName},</p>
+
+  <p>
+    Please click the button below to verify your email address.
+  </p>
+
+  <a href=${verificationLink} style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
+    Verify Email
+  </a>
+
+  <p>
+    If you're having trouble clicking the button, you can also copy and paste the following link into your browser's address bar: ${verificationLink}
+  </p>
+
+  <p>
+    Thank you,<br>
+    Team DevNotes
+  </p>
+
+</body>
+</html>
+
+    `,
   }
 
-  //TODO: delete old image - assignment
+  // Send email
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log(info)
+      throw new ApiError(500, 'Error while sending email')
+    } else {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, {}, 'Verification mail sent successfully'))
+    }
+  })
+})
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath)
-
-  if (!avatar?.url) {
-    throw new ApiError(400, 'Error while uploading on avatar')
+const verifyUser = asyncHandler(async (req, res) => {
+  const { id } = req.body
+  if (!id) {
+    throw new ApiError(400, 'User id is required')
   }
 
   const user = await User.findByIdAndUpdate(
-    req.user?._id,
+    id,
     {
       $set: {
-        avatar: avatar?.url,
+        isVerified: true,
       },
     },
     { new: true }
-  ).select('-password')
-
+  ).select('-password -refreshToken')
   return res
     .status(200)
-    .json(new ApiResponse(200, user, 'Avatar image updated successfully'))
+    .json(new ApiResponse(200, user, 'Email verified successfully'))
 })
 
 export {
@@ -315,5 +461,7 @@ export {
   changeCurrentPassword,
   getCurrentUser,
   updateUserDetails,
-  updateUserAvatar,
+  becomeSeller,
+  sendVerificationEmail,
+  verifyUser,
 }
