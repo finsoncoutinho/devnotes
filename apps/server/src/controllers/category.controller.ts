@@ -37,7 +37,10 @@ const createCategory = asyncHandler(async (req: AuthRequest, res) => {
       throw new ApiError(409, 'Category with this name already exists')
     }
 
-    const categoryImage = await uploadOnCloudinary(categoryImageLocalPath)
+    const categoryImage = await uploadOnCloudinary(
+      categoryImageLocalPath,
+      categoryName
+    )
 
     if (!categoryImage?.url) {
       throw new ApiError(400, 'Error while uploading category image')
