@@ -6,11 +6,6 @@ const reviewSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
-
-    notesID: {
-      type: Schema.Types.ObjectId,
-      ref: 'Note',
-    },
     rating: {
       type: Number,
       required: true,
@@ -25,4 +20,4 @@ const reviewSchema = new Schema(
   }
 )
 
-export const Note = mongoose.model('Note', reviewSchema)
+export const Review = mongoose.model('Review', reviewSchema)
