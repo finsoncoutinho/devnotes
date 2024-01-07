@@ -9,16 +9,22 @@ const cloudinaryConfig = () => {
   })
 }
 
-const uploadOnCloudinary = async (localFilePath: string, publicId: string) => {
+const uploadOnCloudinary = async (localFilePath: string, publicId?: string) => {
   try {
     cloudinaryConfig()
     if (!localFilePath) return null
-
+    let response
     // upload file on cloudinary
-    const response = await cloudinary.uploader.upload(localFilePath, {
-      public_id: publicId,
-      resource_type: 'auto',
-    })
+    if (publicId) {
+      response = await cloudinary.uploader.upload(localFilePath, {
+        public_id: publicId,
+        resource_type: 'auto',
+      })
+    } else {
+      response = await cloudinary.uploader.upload(localFilePath, {
+        resource_type: 'auto',
+      })
+    }
 
     // remove the locally stored file
     fs.unlinkSync(localFilePath)
@@ -31,23 +37,23 @@ const uploadOnCloudinary = async (localFilePath: string, publicId: string) => {
   }
 }
 
-const deleteFileOnCloudinary = async (publicId: string) => {
-  try {
-    cloudinaryConfig()
+// const deleteFileOnCloudinary = async (publicId: string) => {
+//   try {
+//     cloudinaryConfig()
 
-    const result = await cloudinary.uploader.destroy(publicId)
+//     const result = await cloudinary.uploader.destroy(publicId)
 
-    if (result.result === 'ok') {
-      // console.log(`File with public ID ${publicId} deleted from Cloudinary`)
-      return true
-    } else {
-      // console.error(`Failed to delete file from Cloudinary: ${result.result}`)
-      return false
-    }
-  } catch (error) {
-    const castedError = error as { message: string }
-    console.error('Error deleting file from Cloudinary:', castedError.message)
-  }
-}
+//     if (result.result === 'ok') {
+//       // console.log(`File with public ID ${publicId} deleted from Cloudinary`)
+//       return true
+//     } else {
+//       // console.error(`Failed to delete file from Cloudinary: ${result.result}`)
+//       return false
+//     }
+//   } catch (error) {
+//     const castedError = error as { message: string }
+//     console.error('Error deleting file from Cloudinary:', castedError.message)
+//   }
+// }
 
-export { uploadOnCloudinary, deleteFileOnCloudinary }
+export { uploadOnCloudinary }
