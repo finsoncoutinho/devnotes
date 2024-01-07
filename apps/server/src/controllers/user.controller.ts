@@ -6,7 +6,7 @@ import { User } from '../models/user.model'
 import { ApiError } from '../utils/ApiError'
 import { ApiResponse } from '../utils/ApiResponse'
 import { asyncHandler } from '../utils/asyncHandler'
-import { deleteFileOnCloudinary, uploadOnCloudinary } from '../utils/cloudinary'
+import { uploadOnCloudinary } from '../utils/cloudinary'
 
 const generateAccessAndRefreshTokens = async (userId: string) => {
   try {
@@ -304,14 +304,14 @@ const updateUserDetails = asyncHandler(async (req: AuthRequest, res) => {
         { new: true }
       ).select('-password -refreshToken')
     } else {
-      if (req.user?.avatar !== '') {
-        // delete old avatar
+      // if (req.user?.avatar !== '') {
+      //   // delete old avatar
 
-        const deleteAvatar = await deleteFileOnCloudinary(req.user?.email!)
-        if (!deleteAvatar) {
-          throw new ApiError(500, 'Error while deleteing old avatar')
-        }
-      }
+      //   const deleteAvatar = await deleteFileOnCloudinary(req.user?.email!)
+      //   if (!deleteAvatar) {
+      //     throw new ApiError(500, 'Error while deleteing old avatar')
+      //   }
+      // }
 
       const avatar = await uploadOnCloudinary(avatarLocalPath, req.user?.email!)
 
