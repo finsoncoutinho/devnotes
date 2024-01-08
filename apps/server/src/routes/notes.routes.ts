@@ -3,6 +3,7 @@ import { upload } from '../middlewares/multer.middleware'
 import {
   createNote,
   deleteNote,
+  getAllNonVerifiedNotes,
   getUserNotes,
   reviewNote,
   updateNote,
@@ -31,5 +32,6 @@ router.route('/update').patch(verifyJWT, upload.single('thumbnail'), updateNote)
 router.route('/delete/:noteID').delete(verifyJWT, deleteNote)
 router.route('/review').patch(verifyJWT, reviewNote)
 router.route('/user-notes').get(verifyJWT, getUserNotes)
+router.route('/non-verified-notes').get(verifyJWT, getAllNonVerifiedNotes)
 
 export default router
