@@ -125,4 +125,15 @@ const updateCategory = asyncHandler(async (req: AuthRequest, res) => {
   }
 })
 
-export { createCategory, updateCategory }
+const getAllCategories = asyncHandler(async (req, res) => {
+  const categories = await Category.find({})
+  if (!categories) {
+    throw new ApiError(500, 'Something went wrong while fetching category')
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, categories, 'Categories fetched successfully'))
+})
+
+export { createCategory, updateCategory, getAllCategories }
