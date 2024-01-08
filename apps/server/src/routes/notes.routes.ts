@@ -3,6 +3,7 @@ import { upload } from '../middlewares/multer.middleware'
 import {
   createNote,
   deleteNote,
+  getUserNotes,
   reviewNote,
   updateNote,
 } from '../controllers/notes.controller'
@@ -29,5 +30,6 @@ router.route('/create').post(
 router.route('/update').patch(verifyJWT, upload.single('thumbnail'), updateNote)
 router.route('/delete/:noteID').delete(verifyJWT, deleteNote)
 router.route('/review').patch(verifyJWT, reviewNote)
+router.route('/user-notes').get(verifyJWT, getUserNotes)
 
 export default router
