@@ -100,7 +100,7 @@ const updateNote = asyncHandler(async (req: AuthRequest, res) => {
     let note
 
     if (!thumbnailLocalPath) {
-      note = Note.findByIdAndUpdate(
+      note = await Note.findByIdAndUpdate(
         noteID,
         {
           $set: {
@@ -115,7 +115,7 @@ const updateNote = asyncHandler(async (req: AuthRequest, res) => {
     } else {
       const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
 
-      note = Note.findByIdAndUpdate(
+      note = await Note.findByIdAndUpdate(
         noteID,
         {
           $set: {
@@ -146,10 +146,9 @@ const deleteNote = asyncHandler(async (req: AuthRequest, res) => {
   if (!noteID) {
     throw new ApiError(400, 'NoteID is required')
   }
-
   const note = await Note.findById(noteID)
 
-  if (note?.sellerID !== req.user?._id) {
+  if (note?.sellerID?.toString() !== req.user?._id.toString()) {
     throw new ApiError(401, 'unauthorized request')
   }
 
