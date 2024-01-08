@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose'
 
-const notesSchema = new Schema(
+const noteSchema = new Schema(
   {
     title: {
       type: String,
@@ -25,7 +25,7 @@ const notesSchema = new Schema(
       type: String,
       required: true,
     },
-    notesURL: {
+    noteURL: {
       type: String,
       required: true,
     },
@@ -50,4 +50,4 @@ const notesSchema = new Schema(
   }
 )
 
-export const Note = mongoose.model('Note', notesSchema)
+export const Note = mongoose.model('Note', noteSchema)
