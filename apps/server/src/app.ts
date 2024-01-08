@@ -19,8 +19,10 @@ app.use(cookieParser())
 // Routes Imports
 import userRoutes from './routes/user.routes'
 import categoryRoutes from './routes/category.routes'
+import notesRouter from './routes/notes.routes'
 
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/category', categoryRoutes)
+app.use('/api/v1/note', notesRouter)
 
 export { app }
