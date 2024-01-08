@@ -6,6 +6,7 @@ import { uploadOnCloudinary } from '../utils/cloudinary'
 import { ApiResponse } from '../utils/ApiResponse'
 import { AuthRequest } from '../middlewares/auth.middleware'
 import { addReview } from './review.controller'
+import { Types } from 'mongoose'
 
 const createNote = asyncHandler(async (req: AuthRequest, res) => {
   // get notes details from client
@@ -247,6 +248,75 @@ const verifyNote = asyncHandler(async (req: AuthRequest, res) => {
     .json(new ApiResponse(200, note, 'note verified successfully'))
 })
 
+const getNoteDetails = asyncHandler(async (req, res) => {
+  const { noteID } = req.params
+
+  // const note = await Note.findById(noteID)
+  const note = await Note.aggregate([
+    {
+      $match: {
+        _id: new Types.ObjectId(noteID),
+      },
+    },
+    {
+      $lookup: {
+        from: 'categories',
+        localField: 'category',
+        foreignField: '_id',
+        as: 'category',
+        pipeline: [
+          {
+            $project: {
+              categoryName: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        category: {
+          $first: '$category',
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: 'reviews',
+        localField: 'review',
+        foreignField: '_id',
+        as: 'review',
+        pipeline: [
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'userID',
+              foreignField: '_id',
+              as: 'userDetails',
+            },
+          },
+          {
+            $project: {
+              'userDetails.fullName': 1,
+              'userDetails.avatar': 1,
+              review: 1,
+              rating: 1,
+            },
+          },
+        ],
+      },
+    },
+  ])
+
+  if (!note) {
+    throw new ApiError(500, 'Something went wrong while fetching notes')
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, note, 'note details fetched successfully'))
+})
+
 export {
   createNote,
   updateNote,
@@ -255,4 +325,5 @@ export {
   getUserNotes,
   getAllNonVerifiedNotes,
   verifyNote,
+  getNoteDetails,
 }
