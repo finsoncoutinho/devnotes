@@ -5,6 +5,7 @@ import { Note } from '../models/notes.model'
 import { uploadOnCloudinary } from '../utils/cloudinary'
 import { ApiResponse } from '../utils/ApiResponse'
 import { AuthRequest } from '../middlewares/auth.middleware'
+import { addReview } from './review.controller'
 
 const createNote = asyncHandler(async (req: AuthRequest, res) => {
   // get notes details from client
@@ -158,4 +159,41 @@ const deleteNote = asyncHandler(async (req: AuthRequest, res) => {
     .json(new ApiResponse(200, deleteNote, 'Note deleted successfully'))
 })
 
-export { createNote, updateNote, deleteNote }
+const reviewNote = asyncHandler(async (req: AuthRequest, res) => {
+  const reviewSchema = z.object({
+    noteID: z.string().min(1, { message: 'noteID must not be empty' }),
+    review: z.string().min(1, { message: 'review must not be empty' }),
+    // rating: z.string().min(1, { message: 'rating must not be empty' }),
+    rating: z
+      .number()
+      .min(1, { message: 'Rating must be at least 1' })
+      .max(5, { message: 'Rating must be at most 5' })
+      .refine((value) => Number.isInteger(value), {
+        message: 'Rating must be an integer',
+      }),
+  })
+  type ReviewType = z.infer<typeof reviewSchema>
+
+  try {
+    const { noteID, review, rating }: ReviewType = reviewSchema.parse(req.body)
+
+    const newReview = await addReview(rating, review, req.user?._id!)
+
+    const note = await Note.findByIdAndUpdate(
+      noteID,
+      { $push: { review: newReview._id } },
+      { new: true }
+    )
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, note, 'Review added successfully'))
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ApiError(400, error.errors[0].message)
+    }
+    throw error
+  }
+})
+
+export { createNote, updateNote, deleteNote, reviewNote }
