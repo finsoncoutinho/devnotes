@@ -196,4 +196,14 @@ const reviewNote = asyncHandler(async (req: AuthRequest, res) => {
   }
 })
 
-export { createNote, updateNote, deleteNote, reviewNote }
+const getUserNotes = asyncHandler(async (req: AuthRequest, res) => {
+  const userNotes = await Note.find({ sellerID: req.user?._id })
+  if (!userNotes) {
+    throw new ApiError(500, 'Something went wrong while fetching notes')
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, userNotes, 'notes fetched successfully'))
+})
+export { createNote, updateNote, deleteNote, reviewNote, getUserNotes }
