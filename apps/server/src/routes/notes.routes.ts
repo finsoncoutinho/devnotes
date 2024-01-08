@@ -7,6 +7,7 @@ import {
   getUserNotes,
   reviewNote,
   updateNote,
+  verifyNote,
 } from '../controllers/notes.controller'
 import { verifyJWT } from '../middlewares/auth.middleware'
 
@@ -33,5 +34,6 @@ router.route('/delete/:noteID').delete(verifyJWT, deleteNote)
 router.route('/review').patch(verifyJWT, reviewNote)
 router.route('/user-notes').get(verifyJWT, getUserNotes)
 router.route('/non-verified-notes').get(verifyJWT, getAllNonVerifiedNotes)
+router.route('/verify-note/:noteID').post(verifyJWT, verifyNote)
 
 export default router

@@ -221,6 +221,32 @@ const getAllNonVerifiedNotes = asyncHandler(async (req: AuthRequest, res) => {
     .status(200)
     .json(new ApiResponse(200, nonVerifiedNotes, 'notes fetched successfully'))
 })
+const verifyNote = asyncHandler(async (req: AuthRequest, res) => {
+  if (req.user?.role !== 'admin') {
+    throw new ApiError(401, 'Unauthorized request')
+  }
+
+  const { noteID } = req.params
+
+  const note = await Note.findByIdAndUpdate(
+    noteID,
+    {
+      $set: {
+        isVerified: true,
+      },
+    },
+    { new: true }
+  )
+
+  if (!note) {
+    throw new ApiError(500, 'Something went wrong while verifing notes')
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, note, 'note verified successfully'))
+})
+
 export {
   createNote,
   updateNote,
@@ -228,4 +254,5 @@ export {
   reviewNote,
   getUserNotes,
   getAllNonVerifiedNotes,
+  verifyNote,
 }
