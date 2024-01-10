@@ -317,6 +317,77 @@ const getNoteDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, note, 'note details fetched successfully'))
 })
 
+const getNotesByTitle = asyncHandler(async (req, res) => {
+  const { title } = req.params
+
+  const notes = await Note.aggregate([
+    {
+      $match: {
+        title: {
+          $regex: new RegExp(title, 'i'), // Case-insensitive regex match
+        },
+        isVerified: true,
+      },
+    },
+    {
+      $lookup: {
+        from: 'categories',
+        localField: 'category',
+        foreignField: '_id',
+        as: 'category',
+        pipeline: [
+          {
+            $project: {
+              categoryName: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        category: {
+          $first: '$category',
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: 'reviews',
+        localField: 'review',
+        foreignField: '_id',
+        as: 'review',
+        pipeline: [
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'userID',
+              foreignField: '_id',
+              as: 'userDetails',
+            },
+          },
+          {
+            $project: {
+              'userDetails.fullName': 1,
+              'userDetails.avatar': 1,
+              review: 1,
+              rating: 1,
+            },
+          },
+        ],
+      },
+    },
+  ])
+
+  if (!notes) {
+    throw new ApiError(500, 'Something went wrong while fetching notes')
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, notes, 'notes fetched successfully'))
+})
+
 export {
   createNote,
   updateNote,
@@ -326,4 +397,5 @@ export {
   getAllNonVerifiedNotes,
   verifyNote,
   getNoteDetails,
+  getNotesByTitle,
 }

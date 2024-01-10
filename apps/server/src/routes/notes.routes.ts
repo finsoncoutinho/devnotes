@@ -5,6 +5,7 @@ import {
   deleteNote,
   getAllNonVerifiedNotes,
   getNoteDetails,
+  getNotesByTitle,
   getUserNotes,
   reviewNote,
   updateNote,
@@ -36,6 +37,7 @@ router.route('/review').patch(verifyJWT, reviewNote)
 router.route('/user-notes').get(verifyJWT, getUserNotes)
 router.route('/non-verified-notes').get(verifyJWT, getAllNonVerifiedNotes)
 router.route('/verify-note/:noteID').post(verifyJWT, verifyNote)
-router.route('/note-details/:noteID').get(verifyJWT, getNoteDetails)
+router.route('/note-details/:noteID').get(getNoteDetails)
+router.route('/title/:title').get(getNotesByTitle)
 
 export default router
