@@ -326,6 +326,7 @@ const getNotesByTitle = asyncHandler(async (req, res) => {
         title: {
           $regex: new RegExp(title, 'i'), // Case-insensitive regex match
         },
+        isVerified: true,
       },
     },
     {
