@@ -10,15 +10,18 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { useLogin } from "../_hooks/useSignIn";
+import { useSignIn } from "../_hooks/useSignIn";
+import { useRouter } from "next/navigation";
 
-type loginInputs = {
+interface loginInputs {
   email: string;
   password: string;
-};
+}
 
 const SignInForm = () => {
-  const { isPending, login } = useLogin();
+  const router = useRouter();
+
+  const { isPending, signIn } = useSignIn();
 
   const {
     register,
@@ -26,8 +29,7 @@ const SignInForm = () => {
     formState: { errors },
   } = useForm<loginInputs>();
   const onSubmit: SubmitHandler<loginInputs> = (data) => {
-    console.log(data);
-    login(data);
+    signIn(data);
   };
   return (
     <Card className="m-4 w-[350px]">
@@ -38,7 +40,7 @@ const SignInForm = () => {
       <CardContent>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="mt-6 flex flex-col gap-6"
+          className="mt-4 flex flex-col gap-4"
         >
           <div className="flex flex-col gap-2">
             <Input
@@ -77,9 +79,18 @@ const SignInForm = () => {
             )}
           </div>
           <Button type="submit" disabled={isPending} className="mt-2">
-            {isPending ? "Loading..." : "Login"}
+            {isPending ? "Loading..." : "Sign in"}
           </Button>
         </form>
+        <p className="mt-8 text-sm">
+          No account?{" "}
+          <span
+            onClick={() => router.push("/sign-up", { scroll: false })}
+            className="cursor-pointer text-indigo-600 "
+          >
+            Sign up
+          </span>
+        </p>
       </CardContent>
     </Card>
   );
