@@ -10,38 +10,53 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { useSignIn } from "../_hooks/useSignIn";
+import { useSignUp } from "../_hooks/useSignUp";
 import { useRouter } from "next/navigation";
 
-interface loginInputs {
+interface RegisterInputs {
+  fullName: string;
   email: string;
   password: string;
 }
 
-const SignInForm = () => {
+const SignUpForm = () => {
   const router = useRouter();
 
-  const { isPending, signIn } = useSignIn();
+  const { isPending, signUp } = useSignUp();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<loginInputs>();
-  const onSubmit: SubmitHandler<loginInputs> = (data) => {
-    signIn(data);
+  } = useForm<RegisterInputs>();
+  const onSubmit: SubmitHandler<RegisterInputs> = (data) => {
+    signUp(data);
   };
   return (
     <Card className="m-4 w-[350px]">
       <CardHeader>
-        <CardTitle>Welcome Back!</CardTitle>
-        <CardDescription>Sign in to your DevNotes Account</CardDescription>
+        <CardTitle>Welcome to DevNotes!</CardTitle>
+        <CardDescription>Sign up to create your account</CardDescription>
       </CardHeader>
       <CardContent>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="mt-4 flex flex-col gap-4"
+          className="mt-6 flex flex-col gap-6"
         >
+          <div className="flex flex-col gap-2">
+            <Input
+              type="text"
+              placeholder="Full Name"
+              {...register("fullName", {
+                required: "Name is required",
+              })}
+            />
+            {errors.fullName && (
+              <span className=" pl-2 text-sm text-red-600">
+                {errors.fullName.message}
+              </span>
+            )}
+          </div>
           <div className="flex flex-col gap-2">
             <Input
               type="email"
@@ -79,16 +94,16 @@ const SignInForm = () => {
             )}
           </div>
           <Button type="submit" disabled={isPending} className="mt-2">
-            {isPending ? "Loading..." : "Sign in"}
+            {isPending ? "Loading..." : "Sign up"}
           </Button>
         </form>
         <p className="mt-8 text-sm">
-          No account?{" "}
+          Have an account?{" "}
           <span
-            onClick={() => router.push("/sign-up", { scroll: false })}
-            className="cursor-pointer text-indigo-600 "
+            onClick={() => router.push("/sign-in", { scroll: false })}
+            className="cursor-pointer text-indigo-600"
           >
-            Sign up
+            Sign in
           </span>
         </p>
       </CardContent>
@@ -96,4 +111,4 @@ const SignInForm = () => {
   );
 };
 
-export default SignInForm;
+export default SignUpForm;

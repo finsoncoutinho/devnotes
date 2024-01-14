@@ -1,20 +1,23 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { login } from "@/services/apiAuth";
+import { register } from "@/services/apiAuth";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
-interface LoginData {
+interface RegisterData {
+  fullName: string;
   email: string;
   password: string;
 }
-export function useSignIn() {
+export function useSignUp() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { isPending, mutate: signIn } = useMutation({
-    mutationFn: ({ email, password }: LoginData) => login({ email, password }),
+  const { isPending, mutate: signUp } = useMutation({
+    mutationFn: ({ fullName, email, password }: RegisterData) =>
+      register({ fullName, email, password }),
     onSuccess: (user) => {
       queryClient.setQueryData(["user"], user);
+      toast.success("Account created succesfully!!");
       router.replace("/", { scroll: false });
     },
     onError: (err) => {
@@ -22,5 +25,5 @@ export function useSignIn() {
     },
   });
 
-  return { signIn, isPending };
+  return { signUp, isPending };
 }
