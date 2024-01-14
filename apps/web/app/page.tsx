@@ -1,22 +1,9 @@
-'use client'
-
-import { FC } from 'react'
-import { Button } from '@/components/ui/button'
+import { FC } from "react";
 
 interface pageProps {}
 
 const page: FC<pageProps> = ({}) => {
-  const handleClick = () => {
-    console.log('clicked')
-  }
-  return (
-    <h1 className='text-3xl font-bold underline'>
-      Welcome to devnotes
-      <Button variant='default' onClick={handleClick}>
-        Sign up
-      </Button>
-    </h1>
-  )
-}
+  return <h1 className="text-3xl font-bold underline">Welcome to devnotes</h1>;
+};
 
-export default page
+export default page;
