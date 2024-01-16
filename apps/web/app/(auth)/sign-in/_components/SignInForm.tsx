@@ -86,7 +86,7 @@ const SignInForm = () => {
           No account?{" "}
           <span
             onClick={() => router.push("/sign-up", { scroll: false })}
-            className="cursor-pointer text-indigo-600 "
+            className="cursor-pointer underline"
           >
             Sign up
           </span>
